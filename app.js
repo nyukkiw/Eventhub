@@ -1,9 +1,29 @@
 const express = require('express');
 const app = express();
 const mysql = require('mysql2');
+const session = require('express-session');
+const path = require('path')
 require("dotenv").config();
-const {Sequelize, DataTypes} = require('sequelize');
+const {Sequelize, DataTypes, Op, where} = require('sequelize');
 const PORT = process.env.PORT
+
+
+// middleware
+app.use(express.urlencoded({extended : true}))
+app.use(express.json())
+app.use(express.static('public')) 
+app.use(session({
+    secret: process.env.SESSION_SECRET,
+    resave : false,
+    saveUninitialized: false,
+}))
+
+// set view engine
+app.set('view engine','ejs')
+app.set('views',path.join(__dirname,'views'))
+
+
+
 
 const sequelize = new Sequelize(
     process.env.DB_NAME,
@@ -189,6 +209,57 @@ Ticket.belongsTo(Order, {
     onDelete: 'RESTRICT',
     onUpdate: 'CASCADE',
 })
+
+
+// semua controllers
+app.get('/', async(req, res) => {
+    try {
+        const categories = await Category.findAll();
+        let cities = [];
+        try {
+            const citiesData = await Event.findAll({
+                attributes: [ [sequelize.fn('DISTINCT', Sequelize.col('city')), 'city'] ],
+                where : {is_published : true},
+                order: [['city', 'ASC']]
+            })
+            cities = citiesData.map(c => c.city).filter(city => city)
+        } catch (error) {
+            console.error('Error fetching data cities: ' , error)
+            cities = ['jakarta','bandung','surabaya','medan']
+        }
+
+        const latestEvents = await Event.findAll({
+            where: {is_published: true},
+            include: [Category,User],
+            order: [['created_at', 'DESC']],
+            limit: 6
+
+        })
+        const upcomingEvents = await Event.findAll({
+            where: {
+                is_published: true,
+                event_date: {[Op.gte]: new Date()}
+            },
+            include: [Category,User],
+            order: [['event_date', 'ASC']],
+            limit: 6
+        })
+
+        res.render('home',{
+            user: req.session.user,
+            categories,
+            cities: cities,
+            latestEvents,
+            upcomingEvents,
+        })
+    } catch (error) {
+        console.log(error);
+        res.status(500).send('Server error')
+
+    }
+})
+
+// end
 
 // sycn semua table model
 async function syncDatabase() {
