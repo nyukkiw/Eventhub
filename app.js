@@ -39,13 +39,13 @@ const sequelize = new Sequelize(
 
 // Models
 const User = sequelize.define('User', {
-    id: {type: DataTypes.INTEGER, primaryKey:true, autoIncrement:true},
-    name:{ type:DataTypes.STRING(255), allowNull: false },
-    email:{ type:DataTypes.STRING(255), allowNull: false, unique:true },
-    password:{ type:DataTypes.STRING(255), allowNull: false },
-    phone:{ type:DataTypes.STRING(20), allowNull: false },
-    role:{ type:DataTypes.STRING(10), defaultValue: 'user'},
-    avatar:{ type:DataTypes.STRING(20), allowNull: false },
+    id: { type: DataTypes.INTEGER, primaryKey:true, autoIncrement:true},
+    name:{ type: DataTypes.STRING(255), allowNull: false },
+    email:{ type: DataTypes.STRING(255), allowNull: false, unique:true },
+    password:{ type: DataTypes.STRING(255), allowNull: false },
+    phone:{ type: DataTypes.STRING(20), allowNull: false },
+    role:{ type: DataTypes.STRING(10), defaultValue: 'user'},
+    avatar:{ type: DataTypes.STRING(20), allowNull: false },
 }, {
     tableName: 'users',
     timestamps: true,
@@ -71,6 +71,7 @@ const Event = sequelize.define('Event', {
     description:{ type:DataTypes.TEXT, allowNull: false },
     image_path:{ type:DataTypes.STRING(255), allowNull: false },
     venue:{ type:DataTypes.STRING(255), allowNull: false },
+    city:{ type:DataTypes.STRING(100), allowNull: false },
     event_date:{ type:DataTypes.DATE, allowNull: false },
     event_end_date:{ type:DataTypes.DATE, allowNull: false },
     max_attendees:{ type: DataTypes.INTEGER, allowNull:false},
@@ -261,10 +262,21 @@ app.get('/', async(req, res) => {
 
 // end
 
+// Helper function city picture
+app.locals.getCityImage = (city) =>{
+const cityImages = {
+    'Jakarta' : 'https://images.unsplash.com/photo-1558002038-1055907df827?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80',
+    'Yogyakarta' : 'https://images.unsplash.com/photo-1578469550956-0e16b69c6a3d?q=80&w=1106&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=NHwxMjA3fDA%3D',
+    'Surabaya' : 'https://images.unsplash.com/photo-1771258055991-472b737b9250?q=80&w=1169&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=NHwxMjA3fDA%3D',
+};
+return cityImages[city] || 'https://images.unsplash.com/photo-1771250624967-f5604e74f90f?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=NHwxMjA3fDA%3D'
+
+}
+
 // sycn semua table model
 async function syncDatabase() {
     try {
-        await sequelize.sync({alter : true});
+        await sequelize.sync();
         console.log("semua table tersinkronisasi")
     } catch (error) {
         console.log("database gagal: " , error)
